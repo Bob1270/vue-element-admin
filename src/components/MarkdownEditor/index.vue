@@ -2,117 +2,113 @@
   <div :id="id" />
 </template>
 
-<script>
-// deps for editor
-import 'codemirror/lib/codemirror.css' // codemirror
-import 'tui-editor/dist/tui-editor.css' // editor ui
-import 'tui-editor/dist/tui-editor-contents.css' // editor content
-
-import Editor from 'tui-editor'
+<script lang="ts">
+import 'codemirror/lib/codemirror.css' // Editor's Dependency Style
+import '@toast-ui/editor/dist/toastui-editor.css' // Editor's Style
+import '@toast-ui/editor/dist/i18n/es-es'
+import '@toast-ui/editor/dist/i18n/it-it'
+import '@toast-ui/editor/dist/i18n/ja-jp'
+import '@toast-ui/editor/dist/i18n/ko-kr'
+import '@toast-ui/editor/dist/i18n/zh-cn'
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator'
+import Editor, { EditorOptions } from '@toast-ui/editor'
 import defaultOptions from './default-options'
 
-export default {
-  name: 'MarkdownEditor',
-  props: {
-    value: {
-      type: String,
-      default: ''
-    },
-    id: {
-      type: String,
-      required: false,
-      default() {
-        return 'markdown-editor-' + +new Date() + ((Math.random() * 1000).toFixed(0) + '')
-      }
-    },
-    options: {
-      type: Object,
-      default() {
-        return defaultOptions
-      }
-    },
-    mode: {
-      type: String,
-      default: 'markdown'
-    },
-    height: {
-      type: String,
-      required: false,
-      default: '300px'
-    },
-    language: {
-      type: String,
-      required: false,
-      default: 'en_US' // https://github.com/nhnent/tui.editor/tree/master/src/js/langs
+const defaultId = () => 'markdown-editor-' + +new Date() + ((Math.random() * 1000).toFixed(0) + '')
+
+@Component({
+  name: 'MarkdownEditor'
+})
+export default class extends Vue {
+  @Prop({ required: true }) private initialValue!: string
+  @Prop({ default: defaultId }) private id!: string
+  @Prop({ default: () => defaultOptions }) private options!: EditorOptions
+  @Prop({ default: 'markdown' }) private mode!: string
+  @Prop({ default: '300px' }) private height!: string
+  @Prop({ default: 'en' }) private language!: string
+
+  private markdownEditor?: Editor
+  // Mapping for local lang to tuiEditor lang
+  // https://github.com/nhn/tui.editor/blob/master/apps/editor/docs/i18n.md#supported-languages
+  private languageTypeList: { [key: string]: string } = {
+    en: 'en',
+    zh: 'zh-CN',
+    es: 'es',
+    ja: 'ja',
+    ko: 'ko',
+    it: 'it'
+  }
+
+  get editorOptions() {
+    const options = Object.assign({}, defaultOptions, this.options)
+    options.initialEditType = this.mode
+    options.height = this.height
+    options.language = this.languageTypeList[this.language]
+    return options
+  }
+
+  @Watch('language')
+  private onLanguageChange() {
+    this.destroyEditor()
+    this.initEditor()
+  }
+
+  @Watch('height')
+  private onHeightChange(value: string) {
+    if (this.markdownEditor) {
+      this.markdownEditor.height(value)
     }
-  },
-  data() {
-    return {
-      editor: null
+  }
+
+  @Watch('mode')
+  private onModeChange(value: string) {
+    if (this.markdownEditor) {
+      this.markdownEditor.changeMode(value)
     }
-  },
-  computed: {
-    editorOptions() {
-      const options = Object.assign({}, defaultOptions, this.options)
-      options.initialEditType = this.mode
-      options.height = this.height
-      options.language = this.language
-      return options
-    }
-  },
-  watch: {
-    value(newValue, preValue) {
-      if (newValue !== preValue && newValue !== this.editor.getValue()) {
-        this.editor.setValue(newValue)
-      }
-    },
-    language(val) {
-      this.destroyEditor()
-      this.initEditor()
-    },
-    height(newValue) {
-      this.editor.height(newValue)
-    },
-    mode(newValue) {
-      this.editor.changeMode(newValue)
-    }
-  },
+  }
+
   mounted() {
     this.initEditor()
-  },
+  }
+
   destroyed() {
     this.destroyEditor()
-  },
-  methods: {
-    initEditor() {
-      this.editor = new Editor({
-        el: document.getElementById(this.id),
-        ...this.editorOptions
-      })
-      if (this.value) {
-        this.editor.setValue(this.value)
-      }
-      this.editor.on('change', () => {
-        this.$emit('input', this.editor.getValue())
-      })
-    },
-    destroyEditor() {
-      if (!this.editor) return
-      this.editor.off('change')
-      this.editor.remove()
-    },
-    setValue(value) {
-      this.editor.setValue(value)
-    },
-    getValue() {
-      return this.editor.getValue()
-    },
-    setHtml(value) {
-      this.editor.setHtml(value)
-    },
-    getHtml() {
-      return this.editor.getHtml()
+  }
+
+  private initEditor() {
+    const editorElement = document.getElementById(this.id)
+    if (!editorElement) return
+    // eslint-disable-next-line new-cap
+    this.markdownEditor = new Editor({
+      ...this.editorOptions,
+      el: editorElement
+    })
+    this.markdownEditor.insertText(this.initialValue)
+  }
+
+  private destroyEditor() {
+    if (!this.markdownEditor) return
+    this.markdownEditor.remove()
+    this.markdownEditor = undefined
+  }
+
+  public focus() {
+    if (this.markdownEditor) {
+      this.markdownEditor.focus()
     }
+  }
+
+  public setHtml(value: string) {
+    if (this.markdownEditor) {
+      this.markdownEditor.setHtml(value)
+    }
+  }
+
+  public getHtml() {
+    if (this.markdownEditor) {
+      return this.markdownEditor.getHtml()
+    }
+    return ''
   }
 }
 </script>

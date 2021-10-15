@@ -1,211 +1,196 @@
 <template>
-  <div :class="{fullscreen:fullscreen}" class="tinymce-container" :style="{width:containerWidth}">
-    <textarea :id="tinymceId" class="tinymce-textarea" />
+  <div
+    :class="{fullscreen: fullscreen}"
+    class="tinymce-container"
+    :style="{width: containerWidth}"
+  >
+    <tinymce-editor
+      :id="id"
+      v-model="tinymceContent"
+      :init="initOptions"
+    />
     <div class="editor-custom-btn-container">
-      <editorImage color="#1890ff" class="editor-upload-btn" @successCBK="imageSuccessCBK" />
+      <editor-image-upload
+        :color="uploadButtonColor"
+        class="editor-upload-btn"
+        @success-callback="imageSuccessCBK"
+      />
     </div>
   </div>
 </template>
 
-<script>
-/**
- * docs:
- * https://panjiachen.github.io/vue-element-admin-site/feature/component/rich-editor.html#tinymce
- */
-import editorImage from './components/EditorImage'
-import plugins from './plugins'
-import toolbar from './toolbar'
-import load from './dynamicLoadScript'
+<script lang="ts">
+// Docs: https://www.tiny.cloud/docs/advanced/usage-with-module-loaders/
+// Import TinyMCE
+import 'tinymce/tinymce'
+// Default icons are required for TinyMCE 5.3 or above
+import 'tinymce/icons/default'
+// Import themes
+import 'tinymce/themes/silver'
+import 'tinymce/themes/mobile'
+// Any plugins you want to use has to be imported
+import 'tinymce/plugins/advlist'
+import 'tinymce/plugins/anchor'
+import 'tinymce/plugins/autoresize'
+import 'tinymce/plugins/autolink'
+import 'tinymce/plugins/autosave'
+import 'tinymce/plugins/charmap'
+import 'tinymce/plugins/code'
+import 'tinymce/plugins/codesample'
+import 'tinymce/plugins/directionality'
+import 'tinymce/plugins/emoticons'
+import 'tinymce/plugins/fullpage'
+import 'tinymce/plugins/fullscreen'
+import 'tinymce/plugins/help'
+import 'tinymce/plugins/hr'
+import 'tinymce/plugins/image'
+import 'tinymce/plugins/imagetools'
+import 'tinymce/plugins/insertdatetime'
+import 'tinymce/plugins/link'
+import 'tinymce/plugins/lists'
+import 'tinymce/plugins/media'
+import 'tinymce/plugins/nonbreaking'
+import 'tinymce/plugins/noneditable'
+import 'tinymce/plugins/pagebreak'
+import 'tinymce/plugins/paste'
+import 'tinymce/plugins/preview'
+import 'tinymce/plugins/print'
+import 'tinymce/plugins/save'
+import 'tinymce/plugins/searchreplace'
+import 'tinymce/plugins/spellchecker'
+import 'tinymce/plugins/tabfocus'
+import 'tinymce/plugins/table'
+import 'tinymce/plugins/template'
+import 'tinymce/plugins/textpattern'
+import 'tinymce/plugins/visualblocks'
+import 'tinymce/plugins/visualchars'
+import 'tinymce/plugins/wordcount'
+import TinymceEditor from '@tinymce/tinymce-vue' // TinyMCE vue wrapper
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator'
+import { AppModule } from '@/store/modules/app'
+import { SettingsModule } from '@/store/modules/settings'
+import EditorImageUpload, { IUploadObject } from './components/EditorImage.vue'
+import { plugins, toolbar } from './config'
 
-// why use this cdn, detail see https://github.com/PanJiaChen/tinymce-all-in-one
-const tinymceCDN = 'https://cdn.jsdelivr.net/npm/tinymce-all-in-one@4.9.3/tinymce.min.js'
+const defaultId = () => 'vue-tinymce-' + +new Date() + ((Math.random() * 1000).toFixed(0) + '')
 
-export default {
+@Component({
   name: 'Tinymce',
-  components: { editorImage },
-  props: {
-    id: {
-      type: String,
-      default: function() {
-        return 'vue-tinymce-' + +new Date() + ((Math.random() * 1000).toFixed(0) + '')
-      }
-    },
-    value: {
-      type: String,
-      default: ''
-    },
-    toolbar: {
-      type: Array,
-      required: false,
-      default() {
-        return []
-      }
-    },
-    menubar: {
-      type: String,
-      default: 'file edit insert view format table'
-    },
-    height: {
-      type: [Number, String],
-      required: false,
-      default: 360
-    },
-    width: {
-      type: [Number, String],
-      required: false,
-      default: 'auto'
-    }
-  },
-  data() {
-    return {
-      hasChange: false,
-      hasInit: false,
-      tinymceId: this.id,
-      fullscreen: false,
-      languageTypeList: {
-        'en': 'en',
-        'zh': 'zh_CN',
-        'es': 'es_MX',
-        'ja': 'ja'
-      }
-    }
-  },
-  computed: {
-    containerWidth() {
-      const width = this.width
-      if (/^[\d]+(\.[\d]+)?$/.test(width)) { // matches `100`, `'100'`
-        return `${width}px`
-      }
-      return width
-    }
-  },
-  watch: {
-    value(val) {
-      if (!this.hasChange && this.hasInit) {
-        this.$nextTick(() =>
-          window.tinymce.get(this.tinymceId).setContent(val || ''))
-      }
-    }
-  },
-  mounted() {
-    this.init()
-  },
-  activated() {
-    if (window.tinymce) {
-      this.initTinymce()
-    }
-  },
-  deactivated() {
-    this.destroyTinymce()
-  },
-  destroyed() {
-    this.destroyTinymce()
-  },
-  methods: {
-    init() {
-      // dynamic load tinymce from cdn
-      load(tinymceCDN, (err) => {
-        if (err) {
-          this.$message.error(err.message)
-          return
-        }
-        this.initTinymce()
-      })
-    },
-    initTinymce() {
-      const _this = this
-      window.tinymce.init({
-        selector: `#${this.tinymceId}`,
-        language: this.languageTypeList['en'],
-        height: this.height,
-        body_class: 'panel-body ',
-        object_resizing: false,
-        toolbar: this.toolbar.length > 0 ? this.toolbar : toolbar,
-        menubar: this.menubar,
-        plugins: plugins,
-        end_container_on_empty_block: true,
-        powerpaste_word_import: 'clean',
-        code_dialog_height: 450,
-        code_dialog_width: 1000,
-        advlist_bullet_styles: 'square',
-        advlist_number_styles: 'default',
-        imagetools_cors_hosts: ['www.tinymce.com', 'codepen.io'],
-        default_link_target: '_blank',
-        link_title: false,
-        nonbreaking_force_tab: true, // inserting nonbreaking space &nbsp; need Nonbreaking Space Plugin
-        init_instance_callback: editor => {
-          if (_this.value) {
-            editor.setContent(_this.value)
-          }
-          _this.hasInit = true
-          editor.on('NodeChange Change KeyUp SetContent', () => {
-            this.hasChange = true
-            this.$emit('input', editor.getContent())
-          })
-        },
-        setup(editor) {
-          editor.on('FullscreenStateChanged', (e) => {
-            _this.fullscreen = e.state
-          })
-        },
-        // it will try to keep these URLs intact
-        // https://www.tiny.cloud/docs-3x/reference/configuration/Configuration3x@convert_urls/
-        // https://stackoverflow.com/questions/5196205/disable-tinymce-absolute-to-relative-url-conversions
-        convert_urls: false
-        // 整合七牛上传
-        // images_dataimg_filter(img) {
-        //   setTimeout(() => {
-        //     const $image = $(img);
-        //     $image.removeAttr('width');
-        //     $image.removeAttr('height');
-        //     if ($image[0].height && $image[0].width) {
-        //       $image.attr('data-wscntype', 'image');
-        //       $image.attr('data-wscnh', $image[0].height);
-        //       $image.attr('data-wscnw', $image[0].width);
-        //       $image.addClass('wscnph');
-        //     }
-        //   }, 0);
-        //   return img
-        // },
-        // images_upload_handler(blobInfo, success, failure, progress) {
-        //   progress(0);
-        //   const token = _this.$store.getters.token;
-        //   getToken(token).then(response => {
-        //     const url = response.data.qiniu_url;
-        //     const formData = new FormData();
-        //     formData.append('token', response.data.qiniu_token);
-        //     formData.append('key', response.data.qiniu_key);
-        //     formData.append('file', blobInfo.blob(), url);
-        //     upload(formData).then(() => {
-        //       success(url);
-        //       progress(100);
-        //     })
-        //   }).catch(err => {
-        //     failure('出现未知问题，刷新页面，或者联系程序员')
-        //     console.log(err);
-        //   });
-        // },
-      })
-    },
-    destroyTinymce() {
-      const tinymce = window.tinymce.get(this.tinymceId)
-      if (this.fullscreen) {
-        tinymce.execCommand('mceFullScreen')
-      }
+  components: {
+    EditorImageUpload,
+    TinymceEditor
+  }
+})
+export default class extends Vue {
+  @Prop({ required: true }) private value!: string
+  @Prop({ default: defaultId }) private id!: string
+  @Prop({ default: () => [] }) private toolbar!: string[]
+  @Prop({ default: 'file edit insert view format table' }) private menubar!: string
+  @Prop({ default: '360px' }) private height!: string | number
+  @Prop({ default: 'auto' }) private width!: string | number
 
-      if (tinymce) {
-        tinymce.destroy()
-      }
-    },
-    setContent(value) {
-      window.tinymce.get(this.tinymceId).setContent(value)
-    },
-    getContent() {
-      window.tinymce.get(this.tinymceId).getContent()
-    },
-    imageSuccessCBK(arr) {
-      arr.forEach(v => window.tinymce.get(this.tinymceId).insertContent(`<img class="wscnph" src="${v.url}" >`))
+  private hasChange = false
+  private hasInit = false
+  private fullscreen = false
+  // https://www.tiny.cloud/docs/configure/localization/#language
+  // when adding a new language, please also add the corresponding lang file under public/tinymce/langs folder
+  private languageTypeList: { [key: string]: string } = {
+    en: 'en',
+    zh: 'zh_CN',
+    es: 'es',
+    ja: 'ja',
+    ko: 'ko_KR',
+    it: 'it'
+  }
+
+  get language() {
+    return this.languageTypeList[AppModule.language]
+  }
+
+  get uploadButtonColor() {
+    return SettingsModule.theme
+  }
+
+  get tinymceContent() {
+    return this.value
+  }
+
+  set tinymceContent(value) {
+    this.$emit('input', value)
+  }
+
+  get containerWidth() {
+    const width = this.width
+    // Test matches `100`, `'100'`
+    if (/^[\d]+(\.[\d]+)?$/.test(width.toString())) {
+      return `${width}px`
     }
+    return width
+  }
+
+  get initOptions() {
+    return {
+      selector: `#${this.id}`,
+      height: this.height,
+      body_class: 'panel-body',
+      object_resizing: false,
+      toolbar: this.toolbar.length > 0 ? this.toolbar : toolbar,
+      menubar: this.menubar,
+      plugins: plugins,
+      language: this.language,
+      language_url: this.language === 'en' ? '' : `${process.env.BASE_URL}tinymce/langs/${this.language}.js`,
+      skin_url: `${process.env.BASE_URL}tinymce/skins/`,
+      emoticons_database_url: `${process.env.BASE_URL}tinymce/emojis.min.js`,
+      end_container_on_empty_block: true,
+      powerpaste_word_import: 'clean',
+      code_dialog_height: 450,
+      code_dialog_width: 1000,
+      advlist_bullet_styles: 'square',
+      advlist_number_styles: 'default',
+      imagetools_cors_hosts: ['www.tinymce.com', 'codepen.io'],
+      default_link_target: '_blank',
+      link_title: false,
+      // inserting nonbreaking space &nbsp; need Nonbreaking Space Plugin
+      nonbreaking_force_tab: true,
+      // https://www.tiny.cloud/docs-3x/reference/configuration/Configuration3x@convert_urls/
+      // https://stackoverflow.com/questions/5196205/disable-tinymce-absolute-to-relative-url-conversions
+      convert_urls: false,
+      init_instance_callback: (editor: any) => {
+        if (this.value) {
+          editor.setContent(this.value)
+        }
+        this.hasInit = true
+        editor.on('NodeChange Change KeyUp SetContent', () => {
+          this.hasChange = true
+          this.$emit('input', editor.getContent())
+        })
+      },
+      setup: (editor: any) => {
+        editor.on('FullscreenStateChanged', (e: any) => {
+          this.fullscreen = e.state
+        })
+      }
+    }
+  }
+
+  @Watch('language')
+  private onLanguageChange() {
+    const tinymceManager = (window as any).tinymce
+    const tinymceInstance = tinymceManager.get(this.id)
+    if (this.fullscreen) {
+      tinymceInstance.execCommand('mceFullScreen')
+    }
+    if (tinymceInstance) {
+      tinymceInstance.destroy()
+    }
+    this.$nextTick(() => tinymceManager.init(this.initOptions))
+  }
+
+  private imageSuccessCBK(arr: IUploadObject[]) {
+    const tinymce = (window as any).tinymce.get(this.id)
+    arr.forEach(v => {
+      tinymce.insertContent(`<img class="wscnph" src="${v.url}" >`)
+    })
   }
 }
 </script>
@@ -214,26 +199,17 @@ export default {
 .tinymce-container {
   position: relative;
   line-height: normal;
-}
 
-.tinymce-container {
-  ::v-deep {
-    .mce-fullscreen {
-      z-index: 10000;
-    }
+  .mce-fullscreen {
+    z-index: 10000;
   }
-}
-
-.tinymce-textarea {
-  visibility: hidden;
-  z-index: -1;
 }
 
 .editor-custom-btn-container {
   position: absolute;
-  right: 4px;
-  top: 4px;
-  /*z-index: 2005;*/
+  right: 6px;
+  top: 6px;
+  z-index: 1002;
 }
 
 .fullscreen .editor-custom-btn-container {
@@ -243,5 +219,10 @@ export default {
 
 .editor-upload-btn {
   display: inline-block;
+}
+
+textarea {
+  visibility: hidden;
+  z-index: -1;
 }
 </style>

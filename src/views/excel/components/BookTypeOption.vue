@@ -1,7 +1,10 @@
 <template>
   <div style="display:inline-block;">
     <label class="radio-label">Book Type: </label>
-    <el-select v-model="bookType" style="width:120px;">
+    <el-select
+      v-model="bookType"
+      style="width:120px;"
+    >
       <el-option
         v-for="item in options"
         :key="item"
@@ -12,28 +15,23 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    value: {
-      type: String,
-      default: 'xlsx'
-    }
-  },
-  data() {
-    return {
-      options: ['xlsx', 'csv', 'txt']
-    }
-  },
-  computed: {
-    bookType: {
-      get() {
-        return this.value
-      },
-      set(val) {
-        this.$emit('input', val)
-      }
-    }
+<script lang="ts">
+import { Component, Prop, Vue } from 'vue-property-decorator'
+
+@Component({
+  name: 'BookTypeOption'
+})
+export default class extends Vue {
+  @Prop({ required: true }) private value!: string
+
+  private options = ['xlsx', 'csv', 'txt']
+
+  get bookType() {
+    return this.value
+  }
+
+  set bookType(value) {
+    this.$emit('input', value)
   }
 }
 </script>

@@ -1,24 +1,28 @@
 <template>
   <div class="app-container">
     <div style="margin:0 0 5px 20px">
-      Fixed header, sorted by header order,
+      {{ $t('table.dynamicTips1') }}
     </div>
-    <fixed-thead />
+    <fixed-header-table />
 
     <div style="margin:30px 0 5px 20px">
-      Not fixed header, sorted by click order
+      {{ $t('table.dynamicTips2') }}
     </div>
-    <unfixed-thead />
+    <unfixed-header-table />
   </div>
 </template>
 
-<script>
-import FixedThead from './components/FixedThead'
-import UnfixedThead from './components/UnfixedThead'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import FixedHeaderTable from './components/FixedHeaderTable.vue'
+import UnfixedHeaderTable from './components/UnfixedHeaderTable.vue'
 
-export default {
+@Component({
   name: 'DynamicTable',
-  components: { FixedThead, UnfixedThead }
-}
+  components: {
+    FixedHeaderTable,
+    UnfixedHeaderTable
+  }
+})
+export default class extends Vue {}
 </script>
-

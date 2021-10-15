@@ -1,62 +1,59 @@
 <template>
-  <div v-loading.fullscreen.lock="fullscreenLoading" class="main-article" element-loading-text="Efforts to generate PDF">
+  <div
+    v-loading.fullscreen.lock="fullscreenLoading"
+    class="main-article"
+    element-loading-text="Efforts to generate PDF"
+  >
     <div class="article__heading">
       <div class="article__heading__title">
         {{ article.title }}
       </div>
     </div>
     <div style="color: #ccc;">
-      This article is from Evan You on <a target="_blank" href="https://medium.com/the-vue-point/plans-for-the-next-iteration-of-vue-js-777ffea6fabf">medium</a>
+      This article is from Evan You on <a
+        target="_blank"
+        href="https://medium.com/the-vue-point/plans-for-the-next-iteration-of-vue-js-777ffea6fabf"
+      >medium</a>
     </div>
-    <div ref="content" class="node-article-content" v-html="article.content" />
+    <!-- eslint-disable vue/no-v-html -->
+    <div
+      ref="content"
+      class="node-article-content"
+      v-html="article.content"
+    />
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import content from './content'
 
-export default {
-  data() {
-    return {
-      article: '',
-      fullscreenLoading: true
-    }
-  },
+@Component({
+  name: 'PDFDownload'
+})
+export default class extends Vue {
+  private article: { title?: string, content?: string } = {}
+  private fullscreenLoading = true
+
   mounted() {
     this.fetchData()
-  },
-  methods: {
-    fetchData() {
-      import('./content.js').then(data => {
-        const { title } = data.default
-        document.title = title
-        this.article = data.default
-        setTimeout(() => {
-          this.fullscreenLoading = false
-          this.$nextTick(() => {
-            window.print()
-          })
-        }, 3000)
+  }
+
+  private fetchData() {
+    const { title } = content
+    document.title = title
+    this.article = content
+    setTimeout(() => {
+      this.fullscreenLoading = false
+      this.$nextTick(() => {
+        window.print()
       })
-    }
+    }, 3000)
   }
 }
 </script>
 
-<style lang="scss">
-@mixin clearfix {
-  &:before {
-    display: table;
-    content: '';
-    clear: both;
-  }
-
-  &:after {
-    display: table;
-    content: '';
-    clear: both;
-  }
-}
-
+<style lang="scss" scoped>
 .main-article {
   padding: 20px;
   margin: 0 auto;
@@ -118,7 +115,6 @@ export default {
     font-size: 21px;
     line-height: 1.58;
     letter-spacing: -.003em;
-
   }
 
   ul {

@@ -2,15 +2,19 @@
   <div class="app-container">
     <el-card class="box-card">
       <div slot="header">
-        <a class="link-type link-title" target="_blank" href="https://panjiachen.github.io/vue-element-admin-site/guide/advanced/theme.html">
-          Theme documentation
+        <a
+          class="link-type link-title"
+          target="_blank"
+          href="https://armour.github.io/vue-typescript-admin-docs/guide/advanced/theme.html"
+        >
+          {{ $t('theme.documentation') }}
         </a>
       </div>
       <div class="box-item">
-        <span class="field-label">Change Theme : </span>
+        <span class="field-label">{{ $t('theme.change') }} : </span>
         <el-switch v-model="theme" />
         <aside style="margin-top:15px;">
-          Tips: It is different from the theme-pick on the navbar is two different skinning methods, each with different application scenarios. Refer to the documentation for details.
+          {{ $t('theme.tips') }}
         </aside>
       </div>
     </el-card>
@@ -34,10 +38,22 @@
     </div>
 
     <div class="block">
-      <el-button type="primary" icon="el-icon-edit" />
-      <el-button type="primary" icon="el-icon-share" />
-      <el-button type="primary" icon="el-icon-delete" />
-      <el-button type="primary" icon="el-icon-search">
+      <el-button
+        type="primary"
+        icon="el-icon-edit"
+      />
+      <el-button
+        type="primary"
+        icon="el-icon-share"
+      />
+      <el-button
+        type="primary"
+        icon="el-icon-delete"
+      />
+      <el-button
+        type="primary"
+        icon="el-icon-search"
+      >
         Search
       </el-button>
       <el-button type="primary">
@@ -47,7 +63,12 @@
     </div>
 
     <div class="block">
-      <el-tag v-for="tag in tags" :key="tag.type" :type="tag.type" class="tag-item">
+      <el-tag
+        v-for="tag in tags"
+        :key="tag.type"
+        :type="tag.type"
+        class="tag-item"
+      >
         {{ tag.name }}
       </el-tag>
     </div>
@@ -72,38 +93,39 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { Component, Vue, Watch } from 'vue-property-decorator'
 import { toggleClass } from '@/utils'
 import '@/assets/custom-theme/index.css' // the theme changed version element-ui css
 
-export default {
-  name: 'Theme',
-  data() {
-    return {
-      theme: false,
-      tags: [
-        { name: 'Tag One', type: '' },
-        { name: 'Tag Two', type: 'info' },
-        { name: 'Tag Three', type: 'success' },
-        { name: 'Tag Four', type: 'warning' },
-        { name: 'Tag Five', type: 'danger' }
-      ],
-      slideValue: 50,
-      radio: 3
-    }
-  },
-  watch: {
-    theme() {
-      toggleClass(document.body, 'custom-theme')
-    }
+@Component({
+  name: 'Theme'
+})
+export default class extends Vue {
+  private theme = false
+  private tags = [
+    { name: 'Tag One', type: '' },
+    { name: 'Tag Two', type: 'info' },
+    { name: 'Tag Three', type: 'success' },
+    { name: 'Tag Four', type: 'warning' },
+    { name: 'Tag Five', type: 'danger' }
+  ]
+
+  private slideValue = 50
+  private radio = 3
+
+  @Watch('theme')
+  private onThemeChange() {
+    toggleClass(document.body, 'custom-theme')
   }
 }
 </script>
 
-<style scoped>
-.field-label{
+<style lang="scss" scoped>
+.field-label {
   vertical-align: middle;
 }
+
 .box-card {
   width: 400px;
   max-width: 100%;

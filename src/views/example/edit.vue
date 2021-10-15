@@ -2,12 +2,15 @@
   <article-detail :is-edit="true" />
 </template>
 
-<script>
-import ArticleDetail from './components/ArticleDetail'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import ArticleDetail from './components/ArticleDetail.vue'
 
-export default {
-  name: 'EditForm',
-  components: { ArticleDetail }
-}
+@Component({
+  name: 'EditArticle',
+  components: {
+    ArticleDetail
+  }
+})
+export default class extends Vue {}
 </script>
-

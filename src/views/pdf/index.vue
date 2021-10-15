@@ -1,9 +1,12 @@
 <template>
   <div class="app-container">
     <aside style="margin-top:15px;">
-      Here we use window.print() to implement the feature of downloading PDF.
+      {{ $t('pdf.tips') }}
     </aside>
-    <router-link target="_blank" to="/pdf/download">
+    <router-link
+      target="_blank"
+      to="/pdf-download-example"
+    >
       <el-button type="primary">
         Click to download PDF
       </el-button>
@@ -11,3 +14,11 @@
   </div>
 </template>
 
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+
+@Component({
+  name: 'PDF'
+})
+export default class extends Vue {}
+</script>
